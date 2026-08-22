@@ -295,6 +295,9 @@ the record of a real run in the same folder.
 - `spp` — steps per acoustic period
 - `dt_s` — the timestep
 - `t_step_s` — seconds per step
+- `warmup_s` — the ONE-TIME cost before steady stepping (cuFFT plans, kernel
+  compilation, first allocations). `t_expected_s = warmup_s + steps_expected *
+  t_step_s`, so a short GPU run can be mostly warmup and still be healthy
 - `steps_expected` — expected step count
 - `steps_worst` — worst-case step count
 - `t_expected_s` — expected wall time on THIS machine
@@ -438,11 +441,19 @@ carries on.
 - `solver` — the solver that ran
 - `backend` — the backend that was resolved
 - `generated` — UTC ISO-8601 timestamp
-- `git_commit` — the caustica checkout's commit, or `unknown`
+- `git_commit` — which caustica ran: the checkout's commit when the package
+  is imported from a git work tree, otherwise the commit frozen into the
+  package at build time (so a wheel install — Colab — is traceable too),
+  and `unknown` only when neither exists
 - `environment` — `env_report()` output
 - `ppw_warnings` — low-resolution warnings
 - `planner` — the `plan.json` payload, or null for a non-native solver
-- `actual` — measured wall time, steps, convergence, resume offset, VRAM peak
+- `actual` — measured wall time, steps, convergence, resume offset, VRAM peak.
+  Inside it, `t_step_measured_s` is `elapsed / steps` and therefore bundles
+  the one-time warmup into a per-step average; `t_step_steady_s` is the
+  median rate BETWEEN period boundaries and `warmup_s` is what the total
+  does not explain. Both are `null` on a run too short to measure them
+  (fewer than three period boundaries). No existing key changed meaning
 - `derived` — re-derivable geometry (apex voxel, f-number, …)
 
 ---
